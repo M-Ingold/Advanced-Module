@@ -1,0 +1,157 @@
+library(GWASpoly)
+library(gemma2)
+library(tidyverse)
+library(heritability)
+library(cowplot)
+#library(ldsep)
+library(here)
+
+#########################################
+#                                       #
+# Reading the geno- and phenotype files #
+#                                       #
+#########################################
+
+# Files generated using MultiGWAS
+
+genofile <- "./data/GWAS_data/Final_BIG_GBS/variant_calls_GWAS_tetraploid/tetraploid_filtered_GWASPoly.csv"
+phenofile <- "./data/GWAS_data/Additional_data/GWAS_input.csv"
+phenoData <- read_csv(phenofile)
+genoData <- read.csv(genofile)
+
+# setdiff(colnames(genoData), phenoData$Individual)
+# setdiff(phenoData$Individual,colnames(genoData))
+
+data <- read.GWASpoly(ploidy=4,pheno.file=phenofile,geno.file=genofile,
+                      format="ACGT",n.traits=1,delim=",")
+
+###############################################
+#                                             #
+# Creating kinship matrix and performing GWAS #
+#                                             #
+###############################################
+
+# Set the kinship matrix for polygenic effects
+data <- set.K(data) #LOCO=F weil nur ein Chromosom?
+
+# Further incorporation of population structure
+params <- set.params(MAF = 0.01)
+
+#Performing the GWAS multiple times
+dataAdd <- GWASpoly(data = data, models = c("additive"),
+                    traits = "Trait", params = params)
+dataOne <- GWASpoly(data = data, models = c("1-dom"),
+                    traits = "Trait", params = params)
+dataTwo <- GWASpoly(data = data, models = c("2-dom"),
+                    traits = "Trait", params = params)
+dataDipGen <- GWASpoly(data = data, models = c("diplo-general"),
+                       traits = "Trait", params = params)
+dataDipAdd <- GWASpoly(data = data, models = c("diplo-additive"),
+                       traits = "Trait", params = params)
+dataGen <- GWASpoly(data = data, models = c("general"),
+                    traits = "Trait", params = params)
+
+####################################################################################
+#                                                                                  #
+# Heritability estimation, lambda estimation and GWAS sig. threshold determination #
+#                                                                                  #
+####################################################################################
+
+# # Estimating narrow-sense heritability for all models
+# # Additive model
+# h2AddEst <- marker_h2(data.vector = dataAdd@pheno$Trait, geno.vector = dataAdd@pheno$Individual,
+#                       K = dataAdd@K, max.iter = 1000); h2Add <- h2AddEst$h2; h2AddInt <- h2AddEst$conf.int1
+# # Simplex dominant
+# h2OneEst <- marker_h2(data.vector = dataOne@pheno$Trait, geno.vector = dataOne@pheno$Individual,
+#                       K = dataOne@K, max.iter = 1000); h2One <- h2OneEst$h2; h2OneInt <- h2OneEst$conf.int1
+# # Duplex dominant
+# h2TwoEst <- marker_h2(data.vector = dataTwo@pheno$Trait, geno.vector = dataTwo@pheno$Individual,
+#                       K = dataTwo@K, max.iter = 1000); h2Two <- h2TwoEst$h2; h2TwoInt <- h2TwoEst$conf.int1
+# # Diploid General
+# h2DipGenEst <- marker_h2(data.vector = dataDipGen@pheno$Trait, geno.vector = dataDipGen@pheno$Individual,
+#                          K = dataDipGen@K, max.iter = 1000); h2DipGen <- h2DipGenEst$h2; h2DipGenInt <- h2DipGenEst$conf.int1
+# # Diploid Additive
+# h2DipAddEst <- marker_h2(data.vector = dataDipAdd@pheno$Trait, geno.vector = dataDipAdd@pheno$Individual,
+#                          K = dataDipAdd@K, max.iter = 1000); h2DipAdd <- h2DipAddEst$h2; h2DipAddInt <- h2DipAddEst$conf.int1
+# # General
+# h2GenEst <- marker_h2(data.vector = dataGen@pheno$Trait, geno.vector = dataGen@pheno$Individual,
+#                       K = dataGen@K, max.iter = 1000); h2Gen <- h2GenEst$h2; h2GenInt <- h2GenEst$conf.int1
+
+# Setting significance thresholds
+dataAdd <- set.threshold(data = dataAdd, method = "M.eff", level = 0.05)
+# dataAdd <- set.threshold(data = dataAdd, method = "Bonferroni", level = 0.05)
+# dataAdd <- set.threshold(data = dataAdd, method = "FDR", level = 0.05)
+#dataAdd <- set.threshold(data = dataAdd, method = "permute", level = 0.05, n.permute = 100, n.core = 11)
+
+dataOne <- set.threshold(data = dataOne, method = "M.eff", level = 0.05)
+#dataOne <- set.threshold(data = dataOne, method = "Bonferroni", level = 0.05)
+#dataOne <- set.threshold(data = dataOne, method = "FDR", level = 0.05)
+#dataOne <- set.threshold(data = dataOne, method = "permute", level = 0.05, n.permute = 100, n.core = 11)
+
+dataTwo <- set.threshold(data = dataTwo, method = "M.eff", level = 0.05)
+#dataTwo <- set.threshold(data = dataTwo, method = "Bonferroni", level = 0.05)
+#dataTwo <- set.threshold(data = dataTwo, method = "FDR", level = 0.05)
+#dataTwo <- set.threshold(data = dataTwo, method = "permute", level = 0.05, n.permute = 100)
+
+dataDipGen <- set.threshold(data = dataDipGen, method = "M.eff", level = 0.05)
+#dataDipGen <- set.threshold(data = dataDipGen, method = "Bonferroni", level = 0.05)
+#dataDipGen <- set.threshold(data = dataDipGen, method = "FDR", level = 0.05)
+#dataDipGen <- set.threshold(data = dataDipGen, method = "permute", level = 0.05, n.permute = 100, n.core = 11)
+
+dataDipAdd <- set.threshold(data = dataDipAdd, method = "M.eff", level = 0.05)
+#dataDipAdd <- set.threshold(data = dataDipAdd, method = "Bonferroni", level = 0.05)
+#dataDipAdd <- set.threshold(data = dataDipAdd, method = "FDR", level = 0.05)
+#dataDipAdd <- set.threshold(data = dataDipAdd, method = "permute", level = 0.05, n.permute = 100, n.core = 11)
+
+dataGen <- set.threshold(data = dataGen, method = "M.eff", level = 0.05)
+#dataGen <- set.threshold(data = dataGen, method = "Bonferroni", level = 0.05)
+#dataGen <- set.threshold(data = dataGen, method = "FDR", level = 0.05)
+#dataGen <- set.threshold(data = dataGen, method = "permute", level = 0.05, n.permute = 100, n.core = 11)
+
+# qqAdd <- qq.plot(dataAdd, trait = "Trait") + ggtitle("Additive K model")
+# qqOne <- qq.plot(dataOne, trait = "Trait") + ggtitle("Simplex K model")
+# 
+# qqDipGen <- qq.plot(dataDipGen, trait = "Trait") + ggtitle(" Diploid general K model")
+# 
+# qqDipAdd <- qq.plot(dataDipAdd, trait = "Trait") + ggtitle("Diploid additive K model")
+# 
+# qqGen <- qq.plot(dataGen, trait = "Trait") + ggtitle("General K model")
+# 
+# plot(qqAdd)
+# plot(qqOne)
+# plot(qqDipGen)
+# plot(qqDipAdd)
+# plot(qqGen)
+# 
+# write results to the output files
+# Additive model
+outFileScoresAdd <- here('data', 'GWAS_results', 'scoresAddTetraploid.csv')
+write.GWASpoly(data = dataAdd, trait = 'Trait', filename = outFileScoresAdd, what = 'scores', delim = ',')
+outFileEffectsAdd <- here('data', 'GWAS_results', 'effectsAddTetraploid.csv')
+write.GWASpoly(data = dataAdd, trait = 'Trait', filename = outFileEffectsAdd, what = 'effects', delim = ',')
+
+# Simplex dominant model
+outFileScoresOne <- here('data', 'GWAS_results', 'scoresOneTetraploid.csv')
+write.GWASpoly(data = dataOne, trait = 'Trait', filename = outFileScoresOne, what = 'scores', delim = ',')
+outFileEffectsOne <- here('data', 'GWAS_results', 'effectsOneTetraploid.csv')
+write.GWASpoly(data = dataOne, trait = 'Trait', filename = outFileEffectsOne, what = 'effects', delim = ',')
+
+# Duplex dominant model
+outFileScoresTwo <- here('data', 'GWAS_results', 'scoresTwoTetraploid.csv')
+write.GWASpoly(data = dataTwo, trait = 'Trait', filename = outFileScoresTwo, what = 'scores', delim = ',')
+outFileEffectsTwo <- here('data', 'GWAS_results', 'effectsTwoTetraploid.csv')
+write.GWASpoly(data = dataTwo, trait = 'Trait', filename = outFileEffectsTwo, what = 'effects', delim = ',')
+
+# Diplo-general model
+outFileScoresDipGen <- here('data', 'GWAS_results', 'scoresDipGenTetraploid.csv')
+write.GWASpoly(data = dataDipGen, trait = 'Trait', filename = outFileScoresDipGen, what = 'scores', delim = ',')
+
+# Diplo-general model
+outFileScoresDipAdd <- here('data', 'GWAS_results', 'scoresDipAddTetraploid.csv')
+write.GWASpoly(data = dataDipAdd, trait = 'Trait', filename = outFileScoresDipAdd, what = 'scores', delim = ',')
+outFileEffectsDipAdd <- here('data', 'GWAS_results', 'effectsDipAddTetraploid.csv')
+write.GWASpoly(data = dataDipAdd, trait = 'Trait', filename = outFileEffectsDipAdd, what = 'effects', delim = ',')
+
+# General model
+outFileScoresGen <- here('data', 'GWAS_results', 'scoresGenTetraploid.csv')
+write.GWASpoly(data = dataGen, trait = 'Trait', filename = outFileScoresGen, what = 'scores', delim = ',')

@@ -1,0 +1,15 @@
+library(ggplot2)
+hardyweinberg <- function(q){
+  p <- 1-q
+  df <- data.frame(dosage = 1:5, fraction = 0)
+  df$fraction[1] <- p^4
+  df$fraction[2] <- 4*(p^3)*q
+  df$fraction[3] <- 6*(p^2)*(q^2)
+  df$fraction[4] <- 4*(p)*(q^3)
+  df$fraction[5] <- q^4
+  return(df)
+}
+
+df <- hardyweinberg(0.1)
+ggplot(df, aes(x=dosage, y=fraction)) + 
+  geom_bar(stat = "identity", width=0.5)

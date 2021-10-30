@@ -1,0 +1,12 @@
+
+VCFtools - 0.1.15
+(C) Adam Auton and Anthony Marcketta 2009
+
+Parameters as interpreted:
+	--vcf ../../data/GWAS_data/Final_BIG_GBS/variant_calls_GWAS_tetraploid/freebayes_135_samples_chr09_tetraploid_biallelic_SNPs_QUAL_30.vcf
+	--site-mean-depth
+
+After filtering, kept 135 out of 135 Individuals
+Outputting Depth for Each Site
+After filtering, kept 64092 out of a possible 64092 Sites
+Run Time = 8.00 seconds
