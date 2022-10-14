@@ -1,1 +1,3 @@
-Scripts written during my advanced module
+Scripts written during my Master degree's advanced module. VCF filters written in python were adapted from Alexander Kaier's master thesis.
+
+The scripts contain a pipeline for alignment, variant calling and filtering of genotyping by sequencing data. They were employed using three different reference genomes to facilitate comparisons between SNPs called, as well as between GWAS performed on each set of SNPs.
